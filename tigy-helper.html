@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tigy Helper — SAB Script UI Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #0A0A0F;
+    --card:     #111118;
+    --card2:    #16161F;
+    --cyan:     #00F5FF;
+    --purple:   #8B5CF6;
+    --magenta:  #FF006E;
+    --text:     #E8E8F0;
+    --muted:    #6B6B85;
+    --border:   rgba(0,245,255,0.12);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── CANVAS BACKGROUND ── */
+  #bg-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── SCANLINE OVERLAY ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,245,255,0.015) 2px,
+      rgba(0,245,255,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+    animation: scanMove 8s linear infinite;
+  }
+  @keyframes scanMove { from { background-position: 0 0; } to { background-position: 0 100px; } }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 3rem;
+    background: rgba(10,10,15,0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 1.1rem;
+    letter-spacing: 0.12em;
+    background: linear-gradient(90deg, var(--cyan), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-transform: uppercase;
+  }
+  .nav-links { display: flex; gap: 2rem; }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.82rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--cyan); }
+  .nav-badge {
+    background: linear-gradient(135deg, var(--purple), var(--magenta));
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.3rem 0.9rem;
+    border-radius: 100px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: 0 0 20px rgba(139,92,246,0.4);
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+  @keyframes pulseGlow {
+    0%,100% { box-shadow: 0 0 20px rgba(139,92,246,0.4); }
+    50% { box-shadow: 0 0 40px rgba(139,92,246,0.7), 0 0 80px rgba(255,0,110,0.3); }
+  }
+
+  /* ── MAIN WRAPPER ── */
+  main { position: relative; z-index: 2; }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8rem 2rem 4rem;
+    position: relative;
+  }
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.25em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.2s;
+  }
+  .hero-eyebrow span {
+    display: inline-block;
+    width: 40px; height: 1px;
+    background: var(--cyan);
+    vertical-align: middle;
+    margin: 0 0.75rem;
+    opacity: 0.5;
+  }
+  .hero-title {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: clamp(2.8rem, 7vw, 6.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards 0.4s;
+  }
+  .hero-title .line1 { color: var(--text); }
+  .hero-title .line2 {
+    background: linear-gradient(90deg, var(--cyan) 0%, var(--purple) 50%, var(--magenta) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 30px rgba(0,245,255,0.4));
+    animation: gradShift 4s ease-in-out infinite alternate, fadeUp 0.7s ease forwards 0.4s;
+  }
+  @keyframes gradShift {
+    0% { filter: drop-shadow(0 0 20px rgba(0,245,255,0.3)); }
+    100% { filter: drop-shadow(0 0 50px rgba(139,92,246,0.6)); }
+  }
+  .hero-sub {
+    max-width: 560px;
+    font-size: 1.05rem;
+    color: var(--muted);
+    line-height: 1.7;
+    margin: 1.5rem auto 2.5rem;
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards 0.6s;
+  }
+  .hero-sub b { color: var(--text); font-weight: 500; }
+
+  .hero-cta {
+    display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards 0.8s;
+  }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 100%);
+    color: #000;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.9rem 2rem;
+    border-radius: 6px;
+    border: none; cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 0 30px rgba(0,245,255,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 60px rgba(0,245,255,0.5), 0 0 120px rgba(139,92,246,0.3);
+  }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: transparent;
+    color: var(--cyan);
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 600;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.9rem 2rem;
+    border-radius: 6px;
+    border: 1px solid rgba(0,245,255,0.35);
+    cursor: pointer; text-decoration: none;
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
+  }
+  .btn-secondary:hover {
+    background: rgba(0,245,255,0.08);
+    border-color: var(--cyan);
+    box-shadow: 0 0 30px rgba(0,245,255,0.2);
+  }
+
+  /* floating chips */
+  .hero-chips {
+    display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;
+    margin-top: 2.5rem;
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards 1s;
+  }
+  .chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 0.3rem 0.9rem;
+    background: rgba(255,255,255,0.02);
+    letter-spacing: 0.05em;
+  }
+  .chip.active { color: var(--cyan); border-color: rgba(0,245,255,0.3); background: rgba(0,245,255,0.05); }
+
+  /* scroll indicator */
+  .scroll-indicator {
+    position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards 1.3s;
+  }
+  .scroll-indicator span { font-size: 0.65rem; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; }
+  .scroll-line {
+    width: 1px; height: 50px;
+    background: linear-gradient(to bottom, var(--cyan), transparent);
+    animation: scrollPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes scrollPulse { 0%,100% { opacity: 0.3; transform: scaleY(0.6) translateY(-5px); } 50% { opacity: 1; transform: scaleY(1) translateY(5px); } }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,245,255,0.02);
+    padding: 2rem 3rem;
+    display: flex;
+    justify-content: center;
+    gap: 4rem;
+    flex-wrap: wrap;
+  }
+  .stat { text-align: center; }
+  .stat-num {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 2rem;
+    background: linear-gradient(90deg, var(--cyan), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: block;
+  }
+  .stat-label { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 0.3rem; }
+
+  /* ── SECTION GENERIC ── */
+  section { padding: 6rem 2rem; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .section-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--cyan);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    text-transform: uppercase;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+  .section-desc { color: var(--muted); line-height: 1.7; max-width: 480px; }
+
+  /* ── GENERATE SECTION ── */
+  .generate-section {
+    background: linear-gradient(160deg, rgba(139,92,246,0.05) 0%, rgba(0,245,255,0.03) 100%);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 6rem 2rem;
+  }
+  .generate-inner {
+    max-width: 1100px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1.2fr; gap: 5rem; align-items: center;
+  }
+
+  /* config panel */
+  .config-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .config-panel::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--cyan), var(--purple), var(--magenta));
+  }
+  .config-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .config-title::before { content: ''; display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); animation: blink 1.5s step-end infinite; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+  .field-group { margin-bottom: 1.2rem; }
+  .field-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    display: block;
+  }
+  .field-input, .field-select {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.65rem 0.9rem;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+  }
+  .field-input:focus, .field-select:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(0,245,255,0.1);
+  }
+  .field-select option { background: #1a1a2e; }
+
+  .toggle-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { font-size: 0.82rem; color: var(--text); }
+  .toggle {
+    position: relative; width: 36px; height: 20px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 100px; cursor: pointer;
+    transition: background 0.2s;
+    border: none; appearance: none;
+  }
+  .toggle:checked { background: linear-gradient(90deg, var(--cyan), var(--purple)); }
+  .toggle::after {
+    content: ''; position: absolute;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #fff; top: 3px; left: 3px;
+    transition: left 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
+  .toggle:checked::after { left: 19px; }
+
+  /* ── THE BIG GENERATE BUTTON ── */
+  .generate-btn-wrap { margin-top: 1.5rem; }
+  .generate-btn {
+    width: 100%;
+    position: relative;
+    background: transparent;
+    border: none; cursor: pointer;
+    padding: 0;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .generate-btn-inner {
+    display: flex; align-items: center; justify-content: center; gap: 0.7rem;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #0ff1ce 0%, #8B5CF6 50%, #FF006E 100%);
+    background-size: 200% 200%;
+    border-radius: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 0.85rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #000;
+    transition: transform 0.15s;
+    animation: gradFlow 3s ease infinite;
+  }
+  @keyframes gradFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .generate-btn:hover .generate-btn-inner { transform: scale(0.98); }
+  .generate-btn:active .generate-btn-inner { transform: scale(0.95); }
+  .generate-btn::before {
+    content: '';
+    position: absolute; inset: -2px;
+    background: linear-gradient(135deg, var(--cyan), var(--purple), var(--magenta));
+    border-radius: 10px;
+    z-index: -1;
+    filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .generate-btn:hover::before { opacity: 1; }
+
+  .btn-icon { font-size: 1.1rem; }
+
+  /* ── UI OUTPUT PREVIEW ── */
+  #ui-output {
+    display: none;
+    margin-top: 1.5rem;
+  }
+  #ui-output.visible { display: block; }
+  .output-header {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--cyan);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .output-header::before { content: '▶ '; color: var(--magenta); }
+  .output-frame {
+    background: #080810;
+    border: 1px solid rgba(0,245,255,0.25);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(0,245,255,0.1), 0 0 80px rgba(139,92,246,0.1);
+  }
+  .output-bar {
+    background: #0d0d1a;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.r { background: #FF5F57; }
+  .dot.y { background: #FEBC2E; }
+  .dot.g { background: #28C840; }
+  .output-bar-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-left: auto; margin-right: auto;
+    letter-spacing: 0.1em;
+  }
+  .output-body { padding: 1.5rem; min-height: 200px; }
+
+  /* ── GENERATED ROBLOX UI STYLES ── */
+  .roblox-ui {
+    background: linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 100%);
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 10px;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    box-shadow: inset 0 0 60px rgba(139,92,246,0.05);
+    animation: uiFadeIn 0.5s ease forwards;
+  }
+  @keyframes uiFadeIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+
+  .roblox-topbar {
+    background: linear-gradient(90deg, #0d0d1f, #1a0a2e);
+    padding: 0.6rem 1rem;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid rgba(139,92,246,0.2);
+  }
+  .roblox-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    background: linear-gradient(90deg, #00F5FF, #8B5CF6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .roblox-tabs { display: flex; gap: 0.3rem; }
+  .rtab {
+    font-size: 0.6rem; font-weight: 600;
+    padding: 0.3rem 0.7rem;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--muted); cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .rtab.active, .rtab:hover { background: rgba(139,92,246,0.25); color: #d4aaff; border-color: rgba(139,92,246,0.4); }
+
+  .roblox-body { display: flex; }
+  .roblox-sidebar {
+    width: 130px; flex-shrink: 0;
+    background: rgba(0,0,0,0.3);
+    border-right: 1px solid rgba(255,255,255,0.05);
+    padding: 0.75rem 0;
+  }
+  .sidebar-item {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.62rem; font-weight: 500;
+    color: var(--muted); cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 0.4rem;
+    text-transform: uppercase; letter-spacing: 0.07em;
+  }
+  .sidebar-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .sidebar-item.active { color: var(--cyan); border-left-color: var(--cyan); background: rgba(0,245,255,0.05); }
+  .sidebar-icon { font-size: 0.7rem; }
+
+  .roblox-content { flex: 1; padding: 0.75rem; }
+  .rcontent-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.62rem; font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(0,245,255,0.1);
+  }
+  .script-box {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 6px;
+    padding: 0.6rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: #abb2bf;
+    line-height: 1.6;
+    margin-bottom: 0.6rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .script-box::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 20px;
+    background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
+  }
+  .sc-keyword { color: #c678dd; }
+  .sc-func { color: #61afef; }
+  .sc-str { color: #98c379; }
+  .sc-num { color: #d19a66; }
+  .sc-comment { color: #5c6370; font-style: italic; }
+
+  .roblox-controls { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem; }
+  .rctrl {
+    font-size: 0.58rem; font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    border-radius: 4px;
+    border: none; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    transition: all 0.15s;
+  }
+  .rctrl.exec { background: linear-gradient(90deg, #00F5FF, #8B5CF6); color: #000; }
+  .rctrl.exec:hover { box-shadow: 0 0 15px rgba(0,245,255,0.4); }
+  .rctrl.clear { background: rgba(255,255,255,0.07); color: var(--muted); }
+  .rctrl.save { background: rgba(139,92,246,0.2); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+  .rctrl.inject { background: rgba(255,0,110,0.15); color: #ff4d9e; border: 1px solid rgba(255,0,110,0.3); }
+
+  .status-bar {
+    background: #060610;
+    padding: 0.3rem 1rem;
+    display: flex; align-items: center; gap: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #28C840; box-shadow: 0 0 6px #28C840; animation: blink 2s step-end infinite; }
+  .status-text { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--muted); letter-spacing: 0.08em; }
+  .status-text b { color: #28C840; }
+
+  /* ── LOADING ANIMATION ── */
+  .loading-overlay {
+    display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    padding: 2rem;
+    gap: 1rem;
+  }
+  .loading-overlay.active { display: flex; }
+  .loader-ring {
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    border: 2px solid rgba(0,245,255,0.1);
+    border-top: 2px solid var(--cyan);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--cyan);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .loader-steps { display: flex; flex-direction: column; gap: 0.25rem; width: 200px; }
+  .loader-step {
+    font-size: 0.65rem; font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .loader-step.done { opacity: 1; transform: translateX(0); color: var(--cyan); }
+  .loader-step::before { content: '✓'; color: #28C840; }
+
+  /* ── FEATURES GRID ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+  .feature-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(0,245,255,0.04) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .feature-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(0,245,255,0.25);
+    box-shadow: 0 12px 40px rgba(0,245,255,0.08);
+  }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-icon {
+    font-size: 1.8rem; margin-bottom: 1rem;
+    filter: drop-shadow(0 0 8px rgba(0,245,255,0.4));
+  }
+  .feature-title {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700; font-size: 0.85rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text); margin-bottom: 0.6rem;
+  }
+  .feature-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.65; }
+  .feature-tag {
+    display: inline-block; margin-top: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--purple);
+    border: 1px solid rgba(139,92,246,0.3);
+    padding: 0.2rem 0.6rem; border-radius: 4px;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2rem; margin-top: 3rem; }
+  .step { position: relative; }
+  .step-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 3rem; font-weight: 900;
+    color: rgba(0,245,255,0.06);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+  .step-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--text); margin-bottom: 0.5rem;
+  }
+  .step-desc { font-size: 0.83rem; color: var(--muted); line-height: 1.65; }
+  .step-connector {
+    display: none;
+  }
+  @media (min-width: 800px) {
+    .step-connector { display: block; position: absolute; top: 1.5rem; right: -1rem; color: rgba(0,245,255,0.2); font-size: 1.2rem; z-index: 1; }
+    .step:last-child .step-connector { display: none; }
+  }
+
+  /* ── TERMINAL SECTION ── */
+  .terminal-section { background: rgba(0,245,255,0.02); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .terminal-box {
+    background: #060610;
+    border: 1px solid rgba(0,245,255,0.15);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 3rem;
+    box-shadow: 0 0 60px rgba(0,245,255,0.05);
+  }
+  .terminal-topbar {
+    background: #0d0d1f;
+    padding: 0.7rem 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .terminal-title { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-left: 0.5rem; letter-spacing: 0.1em; }
+  .terminal-body {
+    padding: 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 2;
+    color: #abb2bf;
+  }
+  .t-prompt { color: var(--cyan); }
+  .t-cmd { color: var(--text); }
+  .t-output { color: var(--muted); }
+  .t-success { color: #28C840; }
+  .t-warn { color: #FEBC2E; }
+  .t-err { color: var(--magenta); }
+  .cursor {
+    display: inline-block; width: 8px; height: 14px;
+    background: var(--cyan); vertical-align: middle;
+    animation: blink 1s step-end infinite;
+    margin-left: 2px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 3rem 3rem 2rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .footer-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 0.9rem;
+    background: linear-gradient(90deg, var(--cyan), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .footer-text { font-size: 0.75rem; color: var(--muted); }
+  .footer-links { display: flex; gap: 1.5rem; }
+  .footer-links a { font-size: 0.75rem; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--cyan); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+
+  .reveal {
+    opacity: 0; transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.in-view { opacity: 1; transform: translateY(0); }
+
+  /* ── GLOW ORBS ── */
+  .orb {
+    position: fixed; border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none; z-index: 0;
+    animation: orbFloat 12s ease-in-out infinite;
+  }
+  .orb1 {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%);
+    top: -200px; right: -100px;
+    animation-delay: 0s;
+  }
+  .orb2 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(0,245,255,0.08) 0%, transparent 70%);
+    bottom: -150px; left: -100px;
+    animation-delay: -6s;
+  }
+  .orb3 {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(255,0,110,0.07) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    animation-delay: -3s;
+  }
+  @keyframes orbFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(30px,-40px) scale(1.05); }
+    66% { transform: translate(-20px,20px) scale(0.95); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .generate-inner { grid-template-columns: 1fr; gap: 3rem; }
+    footer { flex-direction: column; text-align: center; }
+    .stats-strip { gap: 2rem; }
+  }
+
+  /* ── NOTIFICATION TOAST ── */
+  .toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: var(--card);
+    border: 1px solid rgba(0,245,255,0.3);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    display: flex; align-items: center; gap: 0.75rem;
+    z-index: 999;
+    transform: translateY(100px); opacity: 0;
+    transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 0 30px rgba(0,245,255,0.15);
+    max-width: 300px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-icon { font-size: 1.1rem; }
+  .toast-msg { font-size: 0.8rem; color: var(--text); }
+  .toast-msg b { color: var(--cyan); font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+
+<!-- Glow orbs -->
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<!-- Particle canvas -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- Toast notification -->
+<div class="toast" id="toast">
+  <span class="toast-icon">⚡</span>
+  <span class="toast-msg" id="toast-msg"></span>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Tigy Helper</div>
+  <div class="nav-links">
+    <a href="#generate">Generate</a>
+    <a href="#features">Features</a>
+    <a href="#how">How It Works</a>
+    <a href="#terminal">Docs</a>
+  </div>
+  <div class="nav-badge">v2.4 Live</div>
+</nav>
+
+<main>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow"><span></span>Roblox Script Builder<span></span></div>
+  <h1 class="hero-title">
+    <div class="line1">Tigy Helper</div>
+    <div class="line2">Build. Inject. Dominate.</div>
+  </h1>
+  <p class="hero-sub">
+    The most advanced <b>SAB script UI generator</b> for Roblox executors.
+    Zero boilerplate. Infinite customization. Drop into any executor instantly.
+  </p>
+  <div class="hero-cta">
+    <a href="#generate" class="btn-primary">⚡ Generate UI Now</a>
+    <a href="#features" class="btn-secondary">→ Explore Features</a>
+  </div>
+  <div class="hero-chips">
+    <span class="chip active">// Executor Ready</span>
+    <span class="chip">Synapse X</span>
+    <span class="chip">Fluxus</span>
+    <span class="chip">KRNL</span>
+    <span class="chip">Hydrogen</span>
+    <span class="chip active">// SAB Compatible</span>
+  </div>
+  <div class="scroll-indicator">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-strip">
+  <div class="stat">
+    <span class="stat-num" data-target="48200">0</span>
+    <span class="stat-label">Scripts Generated</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num" data-target="99">0</span>
+    <span class="stat-label">% Executor Compat</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num" data-target="12">0</span>
+    <span class="stat-label">UI Templates</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num" data-target="0" data-text="0ms">0</span>
+    <span class="stat-label">Generation Time</span>
+  </div>
+</div>
+
+<!-- GENERATE SECTION -->
+<section class="generate-section" id="generate">
+  <div class="generate-inner">
+
+    <!-- Left: Config -->
+    <div>
+      <div class="section-eyebrow">// Script Builder</div>
+      <h2 class="section-title reveal">Generate Your<br><span style="color:var(--cyan)">SAB Script UI</span></h2>
+      <p class="section-desc reveal" style="transition-delay:0.1s">
+        Configure your executor UI below. Tigy Helper auto-generates a complete, injection-ready Lua UI script with tabs, toggles, sliders, and keybinds — all from scratch.
+      </p>
+
+      <div class="config-panel reveal" style="margin-top:2rem; transition-delay:0.2s">
+        <div class="config-title">Script Configuration</div>
+
+        <div class="field-group">
+          <label class="field-label">Script Title</label>
+          <input class="field-input" type="text" id="script-title" placeholder="My SAB Script" value="Tigy SAB v1"/>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">UI Theme</label>
+          <select class="field-select" id="ui-theme">
+            <option value="cyber">Cyberpunk Dark</option>
+            <option value="blood">Blood Moon</option>
+            <option value="matrix">Matrix Green</option>
+            <option value="void">Void Purple</option>
+            <option value="frost">Arctic Frost</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">UI Library</label>
+          <select class="field-select" id="ui-lib">
+            <option value="rayfield">Rayfield</option>
+            <option value="fluent">Fluent</option>
+            <option value="orion">Orion</option>
+            <option value="custom">Custom (from scratch)</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Toggle Features</label>
+          <div class="toggle-row">
+            <span class="toggle-label">Auto-Inject on Join</span>
+            <input type="checkbox" class="toggle" id="t1" checked/>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Anti-Cheat Bypass</span>
+            <input type="checkbox" class="toggle" id="t2" checked/>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Keybind Manager</span>
+            <input type="checkbox" class="toggle" id="t3" checked/>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">ESP + Visuals Tab</span>
+            <input type="checkbox" class="toggle" id="t4"/>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Config Save/Load</span>
+            <input type="checkbox" class="toggle" id="t5" checked/>
+          </div>
+        </div>
+
+        <div class="generate-btn-wrap">
+          <button class="generate-btn" id="gen-btn" onclick="generateUI()">
+            <div class="generate-btn-inner">
+              <span class="btn-icon">⚡</span>
+              Generate UI
+            </div>
+          </button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading-overlay" id="loading">
+          <div class="loader-ring"></div>
+          <div class="loader-text">Generating...</div>
+          <div class="loader-steps" id="loader-steps">
+            <div class="loader-step" id="ls1">Parsing configuration</div>
+            <div class="loader-step" id="ls2">Building UI framework</div>
+            <div class="loader-step" id="ls3">Injecting SAB modules</div>
+            <div class="loader-step" id="ls4">Compiling Lua output</div>
+            <div class="loader-step" id="ls5">Optimizing for executor</div>
+          </div>
+        </div>
+
+        <!-- Output -->
+        <div id="ui-output">
+          <div class="output-header">Generated UI Preview</div>
+          <div class="output-frame">
+            <div class="output-bar">
+              <div class="dot r"></div>
+              <div class="dot y"></div>
+              <div class="dot g"></div>
+              <div class="output-bar-title" id="output-bar-title">tigy_sab_ui.lua</div>
+            </div>
+            <div class="output-body" id="output-body"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Live preview scaffold (static) -->
+    <div class="reveal" style="transition-delay:0.3s">
+      <div class="section-eyebrow">// Live Preview</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:0.75rem;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;">Executor UI Scaffold</div>
+      <div class="output-frame">
+        <div class="output-bar">
+          <div class="dot r"></div>
+          <div class="dot y"></div>
+          <div class="dot g"></div>
+          <div class="output-bar-title">Roblox Executor — Preview</div>
+        </div>
+        <div class="output-body">
+          <div class="roblox-ui">
+            <div class="roblox-topbar">
+              <div class="roblox-logo">Tigy SAB</div>
+              <div class="roblox-tabs">
+                <div class="rtab active">Main</div>
+                <div class="rtab">ESP</div>
+                <div class="rtab">Misc</div>
+                <div class="rtab">Cfg</div>
+              </div>
+            </div>
+            <div class="roblox-body">
+              <div class="roblox-sidebar">
+                <div class="sidebar-item active"><span class="sidebar-icon">⚡</span>Execute</div>
+                <div class="sidebar-item"><span class="sidebar-icon">🎯</span>Aimbot</div>
+                <div class="sidebar-item"><span class="sidebar-icon">👁</span>Visuals</div>
+                <div class="sidebar-item"><span class="sidebar-icon">🔧</span>Player</div>
+                <div class="sidebar-item"><span class="sidebar-icon">⚙</span>Settings</div>
+              </div>
+              <div class="roblox-content">
+                <div class="rcontent-title">Script Editor</div>
+                <div class="script-box">
+<span class="sc-comment">-- Tigy Helper SAB Script</span>
+<br><span class="sc-keyword">local</span> <span class="sc-func">TigyUI</span> = loadstring(game:HttpGet(
+<br>&nbsp;&nbsp;<span class="sc-str">"https://tigy.helper/ui.lua"</span>))()
+<br><span class="sc-keyword">local</span> window = <span class="sc-func">TigyUI.Main</span>({
+<br>&nbsp;&nbsp;Title = <span class="sc-str">"SAB Script"</span>,
+<br>&nbsp;&nbsp;Theme = <span class="sc-str">"Cyber"</span>,
+<br>&nbsp;&nbsp;Version = <span class="sc-str">"v2.4"</span>
+<br>})
+                </div>
+                <div class="roblox-controls">
+                  <button class="rctrl exec">▶ Execute</button>
+                  <button class="rctrl inject">⚡ Inject</button>
+                  <button class="rctrl save">💾 Save</button>
+                  <button class="rctrl clear">✕ Clear</button>
+                </div>
+              </div>
+            </div>
+            <div class="status-bar">
+              <div class="status-dot"></div>
+              <div class="status-text">Status: <b>Injected</b> &nbsp;|&nbsp; FPS: <b>60</b> &nbsp;|&nbsp; Ping: <b>12ms</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="section-eyebrow reveal">// Capabilities</div>
+    <h2 class="section-title reveal" style="transition-delay:0.1s">Everything You Need<br>to Script Like a God</h2>
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Instant Generation</div>
+        <div class="feature-desc">Full UI scripts generated in milliseconds. No waiting. No setup. Ready to paste directly into your executor.</div>
+        <span class="feature-tag">~0ms latency</span>
+      </div>
+      <div class="feature-card reveal" style="transition-delay:0.1s">
+        <div class="feature-icon">🎨</div>
+        <div class="feature-title">Theme Engine</div>
+        <div class="feature-desc">5 built-in visual themes with full color customization. Cyberpunk, Blood Moon, Matrix, Void, and Arctic Frost.</div>
+        <span class="feature-tag">5 themes</span>
+      </div>
+      <div class="feature-card reveal" style="transition-delay:0.2s">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">AC Bypass Ready</div>
+        <div class="feature-desc">Built-in anti-cheat bypass hooks baked directly into the generated script structure. Stay undetected.</div>
+        <span class="feature-tag">obfuscated output</span>
+      </div>
+      <div class="feature-card reveal" style="transition-delay:0.3s">
+        <div class="feature-icon">📦</div>
+        <div class="feature-title">Multi-Library</div>
+        <div class="feature-desc">Generate for Rayfield, Fluent, Orion, or fully custom from-scratch Lua UI. Switch any time, regenerate instantly.</div>
+        <span class="feature-tag">Rayfield · Fluent · Orion</span>
+      </div>
+      <div class="feature-card reveal" style="transition-delay:0.1s">
+        <div class="feature-icon">⌨️</div>
+        <div class="feature-title">Keybind System</div>
+        <div class="feature-desc">Auto-generate a full keybind manager in your script. Toggle, hold, and combo binds all supported out of the box.</div>
+        <span class="feature-tag">UserInputService</span>
+      </div>
+      <div class="feature-card reveal" style="transition-delay:0.2s">
+        <div class="feature-icon">💾</div>
+        <div class="feature-title">Config Persistence</div>
+        <div class="feature-desc">Generate save/load config modules using writefile/readfile. Player settings persist between sessions automatically.</div>
+        <span class="feature-tag">writefile API</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how" style="background:rgba(139,92,246,0.03);border-top:1px solid var(--border);">
+  <div class="container">
+    <div class="section-eyebrow reveal">// Process</div>
+    <h2 class="section-title reveal" style="transition-delay:0.1s">Three Steps to<br><span style="color:var(--purple)">Your Perfect Script</span></h2>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <div class="step-title">Configure</div>
+        <div class="step-desc">Choose your UI library, theme, and toggle the features you want — aimbot tabs, ESP, config saving, keybinds.</div>
+        <span class="step-connector">→</span>
+      </div>
+      <div class="step reveal" style="transition-delay:0.15s">
+        <div class="step-num">02</div>
+        <div class="step-title">Generate</div>
+        <div class="step-desc">Hit the button. Tigy Helper builds a complete, clean Lua script with your chosen UI library in milliseconds.</div>
+        <span class="step-connector">→</span>
+      </div>
+      <div class="step reveal" style="transition-delay:0.3s">
+        <div class="step-num">03</div>
+        <div class="step-title">Inject</div>
+        <div class="step-desc">Paste the output into Synapse X, KRNL, Fluxus, or Hydrogen. Execute. Your UI loads immediately in-game.</div>
+        <span class="step-connector">→</span>
+      </div>
+      <div class="step reveal" style="transition-delay:0.45s">
+        <div class="step-num">04</div>
+        <div class="step-title">Dominate</div>
+        <div class="step-desc">Your SAB script is live. All tabs, toggles, sliders, and keybinds working perfectly from first injection.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TERMINAL DOCS -->
+<section class="terminal-section" id="terminal">
+  <div class="container">
+    <div class="section-eyebrow reveal">// Quick Start</div>
+    <h2 class="section-title reveal" style="transition-delay:0.1s">Executor Integration<br><span style="color:var(--cyan)">Reference</span></h2>
+    <div class="terminal-box reveal" style="transition-delay:0.2s">
+      <div class="terminal-topbar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="terminal-title">tigy-helper — bash — 80×24</div>
+      </div>
+      <div class="terminal-body" id="terminal-body">
+        <div><span class="t-prompt">tigy@helper ~ $</span> <span class="t-cmd">tigy generate --theme cyber --lib rayfield --title "MyScript"</span></div>
+        <div class="t-output">  → Parsing config...</div>
+        <div class="t-output">  → Loading Rayfield hooks...</div>
+        <div class="t-success">  ✓ UI Framework compiled (0ms)</div>
+        <div class="t-output">  → Injecting SAB module bindings...</div>
+        <div class="t-success">  ✓ Anti-detect wrappers applied</div>
+        <div class="t-output">  → Writing output...</div>
+        <div class="t-success">  ✓ tigy_sab_ui.lua ready — 247 lines</div>
+        <div>&nbsp;</div>
+        <div><span class="t-prompt">tigy@helper ~ $</span> <span class="t-cmd">tigy export --format executor --target synapse</span></div>
+        <div class="t-success">  ✓ Script optimized for Synapse X</div>
+        <div class="t-warn">  ⚠ Remember to inject BEFORE joining game</div>
+        <div class="t-success">  ✓ Done! Copy script from output panel.</div>
+        <div>&nbsp;</div>
+        <div><span class="t-prompt">tigy@helper ~ $</span> <span class="cursor"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Tigy Helper</div>
+  <div class="footer-text">Designed to make you a SAB script. For educational purposes only.</div>
+  <div class="footer-links">
+    <a href="#">Discord</a>
+    <a href="#">GitHub</a>
+    <a href="#">Docs</a>
+    <a href="#">Support</a>
+  </div>
+</footer>
+
+<script>
+// ── PARTICLE CANVAS ──
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.size = Math.random() * 1.5 + 0.3;
+    this.speedX = (Math.random() - 0.5) * 0.3;
+    this.speedY = (Math.random() - 0.5) * 0.3;
+    this.opacity = Math.random() * 0.4 + 0.05;
+    this.color = Math.random() > 0.6 ? '#00F5FF' : Math.random() > 0.5 ? '#8B5CF6' : '#ffffff';
+  }
+  update() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+    if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.opacity;
+    ctx.fillStyle = this.color;
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// Grid lines
+function drawGrid() {
+  ctx.strokeStyle = 'rgba(0,245,255,0.025)';
+  ctx.lineWidth = 1;
+  const gap = 80;
+  for (let x = 0; x < W; x += gap) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += gap) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+}
+
+for (let i = 0; i < 120; i++) particles.push(new Particle());
+
+function animCanvas() {
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+  particles.forEach(p => { p.update(); p.draw(); });
+  // Connect nearby particles
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 100) {
+        ctx.save();
+        ctx.globalAlpha = (1 - dist/100) * 0.08;
+        ctx.strokeStyle = '#00F5FF';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+  requestAnimationFrame(animCanvas);
+}
+animCanvas();
+
+// ── SCROLL REVEAL ──
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in-view'); } });
+}, { threshold: 0.1 });
+reveals.forEach(r => observer.observe(r));
+
+// ── COUNTER ANIMATION ──
+function animateCounter(el, target, suffix = '') {
+  const dur = 1800;
+  const start = performance.now();
+  function step(now) {
+    const p = Math.min((now - start) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    const val = Math.floor(ease * target);
+    el.textContent = val.toLocaleString() + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+const statNums = document.querySelectorAll('.stat-num');
+const statsObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const el = e.target;
+      const target = parseInt(el.dataset.target);
+      const suffix = el.dataset.text ? el.dataset.text.replace(el.dataset.target, '') : '';
+      animateCounter(el, target, suffix);
+      statsObs.unobserve(el);
+    }
+  });
+}, { threshold: 0.5 });
+statNums.forEach(n => statsObs.observe(n));
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').innerHTML = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── GENERATE UI ──
+function generateUI() {
+  const btn = document.getElementById('gen-btn');
+  const loading = document.getElementById('loading');
+  const output = document.getElementById('ui-output');
+  const steps = ['ls1','ls2','ls3','ls4','ls5'];
+
+  // Reset
+  output.classList.remove('visible');
+  loading.classList.add('active');
+  steps.forEach(s => document.getElementById(s).classList.remove('done'));
+  btn.style.pointerEvents = 'none';
+
+  // Step through loader
+  steps.forEach((s, i) => {
+    setTimeout(() => {
+      document.getElementById(s).classList.add('done');
+      if (i === steps.length - 1) {
+        setTimeout(() => {
+          loading.classList.remove('active');
+          buildOutput();
+          showToast('UI generated! <b>Ready to inject.</b>');
+          btn.style.pointerEvents = 'auto';
+        }, 400);
+      }
+    }, 350 * (i + 1) + 150);
+  });
+}
+
+function buildOutput() {
+  const title = document.getElementById('script-title').value || 'My SAB Script';
+  const theme = document.getElementById('ui-theme').value;
+  const lib = document.getElementById('ui-lib').value;
+  const t1 = document.getElementById('t1').checked;
+  const t2 = document.getElementById('t2').checked;
+  const t3 = document.getElementById('t3').checked;
+  const t4 = document.getElementById('t4').checked;
+  const t5 = document.getElementById('t5').checked;
+
+  const themes = { cyber:'Cyber', blood:'BloodMoon', matrix:'Matrix', void:'Void', frost:'Frost' };
+  const libs = { rayfield:'Rayfield', fluent:'Fluent', orion:'Orion', custom:'TigyUI' };
+  const themeStr = themes[theme] || 'Cyber';
+  const libStr = libs[lib] || 'Rayfield';
+  const slug = title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g,'').toLowerCase();
+
+  document.getElementById('output-bar-title').textContent = slug + '_ui.lua';
+
+  const luaLines = [
+    { cls:'sc-comment', text:'-- ' + title + ' | Generated by Tigy Helper' },
+    { cls:'sc-comment', text:'-- Library: ' + libStr + ' | Theme: ' + themeStr },
+    { cls:'', text:'' },
+    { cls:'sc-keyword', text:'local', extra:' Players = game:GetService(<span class="sc-str">"Players"</span>)' },
+    { cls:'sc-keyword', text:'local', extra:' RunService = game:GetService(<span class="sc-str">"RunService"</span>)' },
+    ...(t3 ? [{ cls:'sc-keyword', text:'local', extra:' UIS = game:GetService(<span class="sc-str">"UserInputService"</span>)' }] : []),
+    { cls:'', text:'' },
+    ...(lib !== 'custom' ? [
+      { cls:'sc-comment', text:'-- Load ' + libStr + ' UI library' },
+      { cls:'sc-keyword', text:'local', extra:' ' + libStr + ' = loadstring(game:HttpGet(<span class="sc-str">"https://raw.githubusercontent.com/tigy/' + lib + '/main/source.lua"</span>))()' },
+    ] : [
+      { cls:'sc-comment', text:'-- Custom UI Framework (Tigy-native)' },
+      { cls:'sc-keyword', text:'local', extra:' TigyUI = loadstring(game:HttpGet(<span class="sc-str">"https://tigy.helper/ui.lua"</span>))()' },
+    ]),
+    { cls:'', text:'' },
+    { cls:'sc-comment', text:'-- Create main window' },
+    { cls:'sc-keyword', text:'local', extra:' Window = ' + (lib !== 'custom' ? libStr : 'TigyUI') + '.CreateWindow({' },
+    { cls:'', text:'&nbsp;&nbsp;Name = <span class="sc-str">"' + title + '"</span>,' },
+    { cls:'', text:'&nbsp;&nbsp;Theme = <span class="sc-str">"' + themeStr + '"</span>,' },
+    { cls:'', text:'&nbsp;&nbsp;ConfigurationSaving = ' + (t5 ? '{ Enabled = <span class="sc-num">true</span>, FolderName = <span class="sc-str">"TigyConfigs"</span>, FileName = <span class="sc-str">"' + slug + '"</span> }' : '{ Enabled = <span class="sc-num">false</span> }') + ',' },
+    ...(t2 ? [{ cls:'', text:'&nbsp;&nbsp;BypassAntiCheat = <span class="sc-num">true</span>,' }] : []),
+    { cls:'', text:'})' },
+    { cls:'', text:'' },
+    { cls:'sc-comment', text:'-- Main Tab' },
+    { cls:'sc-keyword', text:'local', extra:' MainTab = Window.Tabs.Main' },
+    { cls:'', text:'' },
+    { cls:'sc-func', text:'MainTab:CreateSection', extra:'(<span class="sc-str">"Player"</span>)' },
+    { cls:'sc-func', text:'MainTab:CreateToggle', extra:'({ Title = <span class="sc-str">"Infinite Jump"</span>, Default = <span class="sc-num">false</span>, Callback = <span class="sc-keyword">function</span>(v) -- toggle logic <span class="sc-keyword">end</span> })' },
+    { cls:'sc-func', text:'MainTab:CreateSlider', extra:'({ Title = <span class="sc-str">"WalkSpeed"</span>, Min = <span class="sc-num">16</span>, Max = <span class="sc-num">200</span>, Default = <span class="sc-num">16</span>, Callback = <span class="sc-keyword">function</span>(v) localPlayer.Character.Humanoid.WalkSpeed = v <span class="sc-keyword">end</span> })' },
+    { cls:'sc-func', text:'MainTab:CreateSlider', extra:'({ Title = <span class="sc-str">"JumpPower"</span>, Min = <span class="sc-num">50</span>, Max = <span class="sc-num">400</span>, Default = <span class="sc-num">50</span>, Callback = <span class="sc-keyword">function</span>(v) localPlayer.Character.Humanoid.JumpPower = v <span class="sc-keyword">end</span> })' },
+    ...(t4 ? [
+      { cls:'', text:'' },
+      { cls:'sc-comment', text:'-- ESP Tab' },
+      { cls:'sc-keyword', text:'local', extra:' ESPTab = Window.Tabs.ESP' },
+      { cls:'sc-func', text:'ESPTab:CreateSection', extra:'(<span class="sc-str">"Visuals"</span>)' },
+      { cls:'sc-func', text:'ESPTab:CreateToggle', extra:'({ Title = <span class="sc-str">"Player ESP"</span>, Default = <span class="sc-num">false</span>, Callback = <span class="sc-keyword">function</span>(v) -- ESP logic <span class="sc-keyword">end</span> })' },
+    ] : []),
+    ...(t3 ? [
+      { cls:'', text:'' },
+      { cls:'sc-comment', text:'-- Keybind System' },
+      { cls:'sc-func', text:'MainTab:CreateKeybind', extra:'({ Title = <span class="sc-str">"Toggle UI"</span>, Default = Enum.KeyCode.RightShift, Callback = <span class="sc-keyword">function</span>() Window:Toggle() <span class="sc-keyword">end</span> })' },
+    ] : []),
+    ...(t1 ? [
+      { cls:'', text:'' },
+      { cls:'sc-comment', text:'-- Auto inject on character spawn' },
+      { cls:'sc-func', text:'Players.LocalPlayer.CharacterAdded', extra:':Connect(<span class="sc-keyword">function</span>() Window:Refresh() <span class="sc-keyword">end</span>)' },
+    ] : []),
+    { cls:'', text:'' },
+    { cls:'sc-comment', text:'-- End of ' + title + ' | Tigy Helper v2.4' },
+  ];
+
+  let html = '';
+  luaLines.forEach(line => {
+    if (!line.text && !line.cls && !line.extra) {
+      html += '<br>';
+      return;
+    }
+    if (line.cls === 'sc-comment') {
+      html += '<span class="sc-comment">' + line.text + '</span><br>';
+    } else if (line.cls === 'sc-keyword') {
+      html += '<span class="sc-keyword">' + line.text + '</span>' + (line.extra || '') + '<br>';
+    } else if (line.cls === 'sc-func') {
+      html += '<span class="sc-func">' + line.text + '</span>' + (line.extra || '') + '<br>';
+    } else {
+      html += line.text + (line.extra || '') + '<br>';
+    }
+  });
+
+  const body = document.getElementById('output-body');
+  body.innerHTML = '<div class="script-box" style="max-height:300px;overflow-y:auto;">' + html + '</div>'
+    + '<div class="roblox-controls" style="margin-top:1rem;">'
+    + '<button class="rctrl exec" onclick="copyScript()">📋 Copy Script</button>'
+    + '<button class="rctrl save" onclick="showToast(\'Config saved to <b>TigyConfigs/\'+document.getElementById(\'script-title\').value+\'.json</b>\')">💾 Save Config</button>'
+    + '<button class="rctrl inject" onclick="showToast(\'Inject into your executor, then execute the script!\')">⚡ Inject Guide</button>'
+    + '</div>';
+
+  document.getElementById('ui-output').classList.add('visible');
+}
+
+function copyScript() {
+  showToast('Script <b>copied to clipboard!</b> Paste into your executor.');
+}
+
+// ── RTAB INTERACTIONS ──
+document.querySelectorAll('.rtab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+document.querySelectorAll('.sidebar-item').forEach(item => {
+  item.addEventListener('click', function() {
+    document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
